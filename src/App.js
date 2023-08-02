@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import ParticlesBg from 'particles-bg';
-// import Clarifai from 'clarifai';
 import Navigation from './components/Navigation/nav';
 import FaceRecognition from './components/FaceRecognition/FaceRecognition';
 import Signin from './components/Signin/Signin';
@@ -10,9 +9,6 @@ import ImageLinkForm from './components/ImageLinkForm/ImageLinkForm';
 import Rank from './components/Rank/Rank';
 import './App.css';
 
-// const app = new Clarifai.App({
-//   apiKey: '6ae778c6177545fa9811d5594fea3c6e'
-// });
 
 const returnClarifaiRequestOptions = (imageUrl) => {
   // Your PAT (Personal Access Token) can be found in the portal under Authentification
@@ -22,6 +18,7 @@ const PAT = '57856f6490364c158f52d81ab2b9a4ca';
 const USER_ID = 'nbk-juno';       
 const APP_ID = 'face-recog';
 // Change these to whatever model and image URL you want to use
+// eslint-disable-next-line no-unused-vars
 const MODEL_ID = 'face-detection';   
 const IMAGE_URL = imageUrl;
 
@@ -53,15 +50,31 @@ return requestOptions
 
 
 function App() {
-  
-  
   const [input, setInput] = useState('');
+  const [imageUrl, setImageUrl] = useState(' ');
   const [box, setBox] = useState({});
   const [route, setRoute] = useState('signin');
-  const [isSignedIn, setSignIn] = useState(false);
+  const [isSignedIn, setSignIn] = useState(false);  
+  const [user, setUser] = useState({
+      id: '',
+      name: '',
+      email: '',
+      entries: 0,
+      joined: ''
+  })
+
+  const loadUser = (data) => {
+    setUser({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        entries: data.entries,
+        joined: data.joined
+    });
+  }
+
 
   const onInputChange = (event) => {
-    console.log(event.target.value);
     setInput(event.target.value);
   }
 
@@ -84,15 +97,36 @@ function App() {
   }
 
   const onButtonSubmit = () => {
-    fetch("https://api.clarifai.com/v2/models/" + "face-detection" + "/outputs", returnClarifaiRequestOptions(input))
-        .then(response => response.json())
-        .then(data => {
-          displayFaceBox(calculateFaceLocation(data));
+    fetch("https://api.clarifai.com/v2/models/face-detection/outputs", returnClarifaiRequestOptions(input))
+      .then(response => response.json())
+      .then(data => {
+        displayFaceBox(calculateFaceLocation(data));
+        return data;
+      })
+      .then(data => {
+        fetch('http://localhost:3000/image', {
+          method: 'put',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: user.id  // Access user ID from state
+          })
         })
-        .catch(err => {
-          console.log(err);
-        });
+          .then(response => response.json())
+          .then(count => {
+            setUser(prevState => ({
+              ...prevState,
+              entries: count
+            }));
+          })
+          .catch(err => {
+            console.log('error in /image endpoint: ', err);
+          });
+      })
+      .catch(err => {
+        console.log('Error in image API: ',err);
+      });
   };
+  
 
   const onRouteChange = (route) => {
     if ( route === 'signout') {
@@ -113,7 +147,10 @@ function App() {
       { route === 'home'
         ? <div>
             <Logo />
-            <Rank />
+            <Rank 
+              name={user.name}
+              entries = {user.entries}
+            />
             <ImageLinkForm 
               onInputChange={onInputChange} 
               onButtonSubmit={onButtonSubmit}
@@ -122,8 +159,14 @@ function App() {
           </div>
           : (
               route === 'signin'
-              ? <Signin  onRouteChange={onRouteChange}/>
-              : <Register onRouteChange={onRouteChange} />   
+              ? <Signin  
+                  onRouteChange={onRouteChange}
+                  loadUser={loadUser}
+                />
+              : <Register 
+                  loadUser={loadUser}
+                  onRouteChange={onRouteChange} 
+                />   
           )
           
           
