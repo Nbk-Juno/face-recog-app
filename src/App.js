@@ -10,44 +10,6 @@ import Rank from './components/Rank/Rank';
 import './App.css';
 
 
-const returnClarifaiRequestOptions = (imageUrl) => {
-  // Your PAT (Personal Access Token) can be found in the portal under Authentification
-const PAT = '57856f6490364c158f52d81ab2b9a4ca';
-// Specify the correct user_id/app_id pairings
-// Since you're making inferences outside your app's scope
-const USER_ID = 'nbk-juno';       
-const APP_ID = 'face-recog';
-// Change these to whatever model and image URL you want to use
-// eslint-disable-next-line no-unused-vars
-const MODEL_ID = 'face-detection';   
-const IMAGE_URL = imageUrl;
-
-const raw = JSON.stringify({
-    "user_app_id": {
-        "user_id": USER_ID,
-        "app_id": APP_ID
-    },
-    "inputs": [
-        {
-            "data": {
-                "image": {
-                    "url": IMAGE_URL
-                }
-            }
-        }
-    ]
-});
-const requestOptions = {
-  method: 'POST',
-  headers: {
-      'Accept': 'application/json',
-      'Authorization': 'Key ' + PAT
-  },
-  body: raw
-};
-return requestOptions
-}
-
 //Initial State
 const initialState = {
   input: '',
@@ -107,44 +69,36 @@ function App() {
   }
 
   const onButtonSubmit = () => {
-    fetch("https://api.clarifai.com/v2/models/face-detection/outputs", returnClarifaiRequestOptions(input))
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response from Clarifai was not ok');
-        }
-        return response.json();
+    setImageUrl(input);  // set image URL for FaceRecognition component
+    fetch('http://localhost:3000/imageurl', {
+      method: 'post',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        input: input  // send the user's input (the image URL) to your server
       })
-      .then(data => {
-        displayFaceBox(calculateFaceLocation(data));
-  
+    })
+    .then(response => response.json())
+    .then(response => {
+      if (response) {
         fetch('http://localhost:3000/image', {
           method: 'put',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
-            id: user.id  // Access user ID from state
+            id: user.id
           })
         })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('Network response from /image endpoint was not ok');
-            }
-            return response.json();
-          })
-          .then(count => {
-            setUser(prevState => ({
-              ...prevState,
-              entries: count
-            }));
-          })
-          .catch(err => {
-            console.log('Error in /image endpoint: ', err.message);
-          });
-  
-        return data;
-      })
-      .catch(err => {
-        console.log('Error in image API: ', err.message);
-      });
+        .then(response => response.json())
+        .then(count => {
+          setUser(prevState => ({
+            ...prevState,
+            entries: count
+          }));
+        })
+        .catch(console.log);
+      }
+      displayFaceBox(calculateFaceLocation(response));
+    })
+    .catch(err => console.log(err));   
   };
   
   
