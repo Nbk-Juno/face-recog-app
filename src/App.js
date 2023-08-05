@@ -48,20 +48,30 @@ const requestOptions = {
 return requestOptions
 }
 
+//Initial State
+const initialState = {
+  input: '',
+  imageUrl: '',
+  box: {},
+  route: 'signin',
+  isSignedIn: false,
+    user: {
+    id: '',
+    name: '',
+    email: '',
+    entries: 0,
+    joined: ''
+  }
+}
+
 
 function App() {
-  const [input, setInput] = useState('');
-  const [imageUrl, setImageUrl] = useState(' ');
-  const [box, setBox] = useState({});
-  const [route, setRoute] = useState('signin');
-  const [isSignedIn, setSignIn] = useState(false);  
-  const [user, setUser] = useState({
-      id: '',
-      name: '',
-      email: '',
-      entries: 0,
-      joined: ''
-  })
+  const [input, setInput] = useState(initialState.input);
+  const [imageUrl, setImageUrl] = useState(initialState.imageUrl);
+  const [box, setBox] = useState(initialState.box);
+  const [route, setRoute] = useState(initialState.route);
+  const [isSignedIn, setSignIn] = useState(initialState.isSignedIn);  
+  const [user, setUser] = useState(initialState.user);
 
   const loadUser = (data) => {
     setUser({
@@ -98,12 +108,15 @@ function App() {
 
   const onButtonSubmit = () => {
     fetch("https://api.clarifai.com/v2/models/face-detection/outputs", returnClarifaiRequestOptions(input))
-      .then(response => response.json())
-      .then(data => {
-        displayFaceBox(calculateFaceLocation(data));
-        return data;
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response from Clarifai was not ok');
+        }
+        return response.json();
       })
       .then(data => {
+        displayFaceBox(calculateFaceLocation(data));
+  
         fetch('http://localhost:3000/image', {
           method: 'put',
           headers: { 'Content-Type': 'application/json' },
@@ -111,7 +124,12 @@ function App() {
             id: user.id  // Access user ID from state
           })
         })
-          .then(response => response.json())
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response from /image endpoint was not ok');
+            }
+            return response.json();
+          })
           .then(count => {
             setUser(prevState => ({
               ...prevState,
@@ -119,18 +137,26 @@ function App() {
             }));
           })
           .catch(err => {
-            console.log('error in /image endpoint: ', err);
+            console.log('Error in /image endpoint: ', err.message);
           });
+  
+        return data;
       })
       .catch(err => {
-        console.log('Error in image API: ',err);
+        console.log('Error in image API: ', err.message);
       });
   };
+  
   
 
   const onRouteChange = (route) => {
     if ( route === 'signout') {
-      setSignIn(false);
+      setInput(initialState.input);
+      setImageUrl(initialState.imageUrl);
+      setBox(initialState.box);
+      setRoute(initialState.route);
+      setSignIn(initialState.isSignedIn);
+      setUser(initialState.user);
     } else if (route === 'home') {
       setSignIn(true);
     }
