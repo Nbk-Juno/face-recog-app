@@ -31,9 +31,11 @@ const Register = ({ onRouteChange, loadUser }) => {
         })
             .then(response => response.json())
             .then(user => {
-                if (user.id) {
+                if (user && user.id) {
                     loadUser(user);
                     onRouteChange('home');
+                } else {
+                    console.log('Registration failed:', user);
                 }
             })
     }
