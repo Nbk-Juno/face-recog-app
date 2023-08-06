@@ -119,7 +119,7 @@ function App() {
 
   return (
     <div className="App">
-      <ParticlesBg type="cobweb" num={300} color='#00ff00' bg={true} />
+      <ParticlesBg type="cobweb" num={200} color='#00ff00' bg={true} />
       <Navigation 
         isSignedIn={isSignedIn}
         onRouteChange={onRouteChange}
