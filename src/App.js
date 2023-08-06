@@ -70,7 +70,7 @@ function App() {
 
   const onButtonSubmit = () => {
     setImageUrl(input);  // set image URL for FaceRecognition component
-    fetch('http://localhost:3000/imageurl', {
+    fetch('https://thawing-eyrie-55967-37b12cb50f63.herokuapp.com/imageurl', {
       method: 'post',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -80,7 +80,7 @@ function App() {
     .then(response => response.json())
     .then(response => {
       if (response) {
-        fetch('http://localhost:3000/image', {
+        fetch('https://thawing-eyrie-55967-37b12cb50f63.herokuapp.com:3000/image', {
           method: 'put',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
